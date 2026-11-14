@@ -44,6 +44,9 @@ export const SummaryBento: React.FC<SummaryBentoProps> = ({ summary, language })
 
   const bentoRef = useRef<HTMLDivElement>(null);
 
+  const countsRef = useRef(displayCounts);
+  countsRef.current = displayCounts;
+
   useEffect(() => {
     const targets = {
       total: totalCount,
@@ -56,7 +59,7 @@ export const SummaryBento: React.FC<SummaryBentoProps> = ({ summary, language })
       attention: attentionCount,
     };
 
-    const current = { ...displayCounts };
+    const current = { ...countsRef.current };
 
     const tween = gsap.to(current, {
       ...targets,
@@ -79,7 +82,7 @@ export const SummaryBento: React.FC<SummaryBentoProps> = ({ summary, language })
     return () => {
       tween.kill();
     };
-  }, [summary]);
+  }, [totalCount, normalCount, lowCount, highCount, urgentCount, unclassifiedCount, needsInfoCount, attentionCount]);
 
   const hasUrgent = urgentCount > 0;
   const urgentWarningText =

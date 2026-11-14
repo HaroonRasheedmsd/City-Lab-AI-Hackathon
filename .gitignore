@@ -8,8 +8,11 @@ __pycache__/
 *.cache/
 .pytest_cache/
 
-# Environments
+# Environments & Secrets
 .env
+.env.*
+!.env.example
+*.local
 .venv/
 env/
 venv/
@@ -20,3 +23,9 @@ build/
 dist/
 *.egg-info/
 node_modules/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

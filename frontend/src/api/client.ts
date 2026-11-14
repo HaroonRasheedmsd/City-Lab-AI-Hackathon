@@ -12,7 +12,7 @@ import type {
   ReportSummary,
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 class ApiError extends Error {
   status: number;

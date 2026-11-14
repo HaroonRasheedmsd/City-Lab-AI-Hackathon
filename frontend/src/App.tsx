@@ -66,24 +66,6 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Load patient roster on initial mount
-  useEffect(() => {
-    async function loadRoster() {
-      try {
-        const list = await api.getPatients();
-        setPatients(list);
-        if (list.length > 0 && !selectedPatientId) {
-          // Default to first patient (P001)
-          loadPatientData(list[0].patient_id);
-        }
-      } catch (err: any) {
-        console.error('Failed to load patient roster:', err);
-        setError('Failed to connect to CityLab backend service. Please ensure FastAPI server is running on port 8000.');
-      }
-    }
-    loadRoster();
-  }, []);
-
   // Fetch full analysis, explanations, and doctor questions for a patient
   const loadPatientData = async (
     patientId: string,
@@ -168,6 +150,24 @@ export default function App() {
       setIsLoading(false);
     }
   };
+
+  // Load patient roster on initial mount
+  useEffect(() => {
+    async function loadRoster() {
+      try {
+        const list = await api.getPatients();
+        setPatients(list);
+        if (list.length > 0 && !selectedPatientId) {
+          // Default to first patient (P001)
+          loadPatientData(list[0].patient_id);
+        }
+      } catch (err: any) {
+        console.error('Failed to load patient roster:', err);
+        setError('Failed to connect to CityLab backend service. Please ensure FastAPI server is running on port 8000.');
+      }
+    }
+    loadRoster();
+  }, []);
 
   // Custom text or uploaded report analysis
   const handleAnalyzeCustom = async (

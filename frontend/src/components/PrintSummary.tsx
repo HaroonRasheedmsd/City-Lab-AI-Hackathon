@@ -20,6 +20,7 @@ export const PrintSummary: React.FC<PrintSummaryProps> = ({
   language,
 }) => {
   const t = translations[language];
+  const [printDate] = React.useState(() => new Date().toLocaleDateString());
 
   if (!summary) return null;
 
@@ -42,7 +43,7 @@ export const PrintSummary: React.FC<PrintSummaryProps> = ({
           </p>
         </div>
         <div className="text-right text-xs text-gray-500">
-          <div>Printed: {new Date().toLocaleDateString()}</div>
+          <div>Printed: {printDate}</div>
           <div className="font-mono text-[11px]">System: Rules Engine v1.0</div>
         </div>
       </div>
