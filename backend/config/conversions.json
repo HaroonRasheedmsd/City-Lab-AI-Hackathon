@@ -26,6 +26,15 @@
       "operation": "multiply",
       "source": "standard",
       "citation": "Standard clinical chemistry conversion (cholesterol molecular weight 386.65 g/mol)"
+    },
+    {
+      "analyte": "Cholesterol",
+      "from_unit": "mg/dL",
+      "to_unit": "mmol/L",
+      "factor": 0.02586,
+      "operation": "multiply",
+      "source": "standard",
+      "citation": "Standard clinical chemistry inverse conversion (1 / 38.67)"
     }
   ]
 }

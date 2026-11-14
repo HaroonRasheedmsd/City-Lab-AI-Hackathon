@@ -48,9 +48,11 @@ def select_reference_range(
     # Sex check for sex-dependent analytes
     norm_sex = None
     if biological_sex:
-        s_clean = biological_sex.strip().capitalize()
-        if s_clean in ["Male", "Female"]:
-            norm_sex = s_clean
+        s_lower = biological_sex.strip().lower()
+        if s_lower in ["male", "m"]:
+            norm_sex = "Male"
+        elif s_lower in ["female", "f"]:
+            norm_sex = "Female"
 
     if analyte_canonical in SEX_DEPENDENT_ANALYTES:
         if not norm_sex:

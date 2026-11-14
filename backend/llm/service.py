@@ -287,6 +287,17 @@ class ExplanationService:
                 safety_refusal=refusal,
             )
 
+        if routing_msg:
+            # Direct authoritative file-based answer (e.g. dangerous threshold queries)
+            return ChatResponse(
+                patient_id=patient_id,
+                intent=ChatIntent.ALLOWED_QA.value,
+                response=routing_msg,
+                provider_used="deterministic_file_thresholds",
+                cached=False,
+                latency_ms=round((time.time() - start_t) * 1000, 2),
+            )
+
         # 3. Check cache
         cache_key = llm_cache.compute_key(
             patient_id=patient_id,

@@ -107,6 +107,19 @@ def resolve_test_name(
     if cleaned in BASE_ALIASES:
         return BASE_ALIASES[cleaned], "glossary_alias"
 
+    # 3b. Check parenthetical patterns e.g. "ALT (SGPT)" or "Hemoglobin (Hb)"
+    m_paren = re.match(r"^([^(]+)\s*\(([^)]+)\)\s*$", cleaned)
+    if m_paren:
+        part1 = clean_test_string(m_paren.group(1))
+        part2 = clean_test_string(m_paren.group(2))
+        for c in CANONICAL_TESTS:
+            if clean_test_string(c) in [part1, part2]:
+                return c, "exact_canonical"
+        if part1 in BASE_ALIASES:
+            return BASE_ALIASES[part1], "glossary_alias"
+        if part2 in BASE_ALIASES:
+            return BASE_ALIASES[part2], "glossary_alias"
+
     # 4. Conservative fuzzy match against known aliases and canonical tests
     candidates = list(BASE_ALIASES.keys())
     matches = difflib.get_close_matches(cleaned, candidates, n=2, cutoff=fuzzy_threshold)
