@@ -264,68 +264,84 @@ def parse_patient_report(content: str, filename: str = "") -> Tuple[DemographicD
     # Section III Analytical Results
     tests: List[TestResultInput] = []
     sec3_match = re.search(r"## SECTION III: ANALYTICAL RESULTS.*?\n(.*)", clean, re.DOTALL)
-    if sec3_match:
-        sec3_text = sec3_match.group(1).strip()
-        # 1. Check for markdown table
-        table_lines = [l.strip() for l in sec3_text.splitlines() if l.strip().startswith("|")]
-        if len(table_lines) >= 3:
-            for row in table_lines[2:]:
-                cells = [c.strip().replace("*", "") for c in row.split("|")[1:-1]]
-                if len(cells) >= 3:
+    sec3_text = sec3_match.group(1).strip() if sec3_match else clean.strip()
+    
+    # 1. Check for markdown table
+    table_lines = [l.strip() for l in sec3_text.splitlines() if l.strip().startswith("|")]
+    if len(table_lines) >= 3:
+        for row in table_lines[2:]:
+            cells = [c.strip().replace("*", "") for c in row.split("|")[1:-1]]
+            if len(cells) >= 3:
+                tests.append(TestResultInput(
+                    test_name=cells[0],
+                    value=cells[1],
+                    unit=cells[2]
+                ))
+    else:
+        lines = [l.strip() for l in sec3_text.splitlines() if l.strip() and not l.strip().startswith("The analytical")]
+        skip_prefixes = [
+            "patient full name", "patient name", "patient", "recorded age", "age",
+            "biological sex", "sex", "medical record number", "mrn", "date of issuance",
+            "date", "clinical encounter", "section", "citylab", "lab report", "tests"
+        ]
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            line_lower = line.lower().lstrip("*-# ").strip()
+            if any(line_lower.startswith(p + ":") or line_lower == p or line_lower == (p + "s:") for p in skip_prefixes):
+                i += 1
+                continue
+
+            # Pattern: Test Conducted: / Value Recorded: or Test: / Result:
+            m_tc = re.match(r"^(?:Test Conducted|Test):\s*(.+)", line, re.IGNORECASE)
+            if m_tc and i + 1 < len(lines):
+                next_line = lines[i+1]
+                m_vr = re.match(r"^(?:Value Recorded|Result):\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", next_line, re.IGNORECASE)
+                if m_vr:
                     tests.append(TestResultInput(
-                        test_name=cells[0],
-                        value=cells[1],
-                        unit=cells[2]
+                        test_name=m_tc.group(1).strip(),
+                        value=m_vr.group(1).strip(),
+                        unit=(m_vr.group(2) or "").strip()
                     ))
-        else:
-            lines = [l.strip() for l in sec3_text.splitlines() if l.strip() and not l.strip().startswith("The analytical")]
-            i = 0
-            while i < len(lines):
-                line = lines[i]
-                # Pattern: Test Conducted: / Value Recorded: or Test: / Result:
-                m_tc = re.match(r"^(?:Test Conducted|Test):\s*(.+)", line, re.IGNORECASE)
-                if m_tc and i + 1 < len(lines):
-                    next_line = lines[i+1]
-                    m_vr = re.match(r"^(?:Value Recorded|Result):\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", next_line, re.IGNORECASE)
-                    if m_vr:
-                        tests.append(TestResultInput(
-                            test_name=m_tc.group(1).strip(),
-                            value=m_vr.group(1).strip(),
-                            unit=(m_vr.group(2) or "").strip()
-                        ))
-                        i += 2
-                        continue
-                # Arrow syntax: * pH Level -> 5.5
-                m_arrow = re.match(r"^\*?\s*([a-zA-Z0-9\s()]+?)\s*->\s*([<>]?[0-9.]+|[A-Za-z]+)", line)
-                if m_arrow:
+                    i += 2
+                    continue
+            # Arrow syntax: * pH Level -> 5.5
+            m_arrow = re.match(r"^\*?\s*([a-zA-Z0-9\s()]+?)\s*->\s*([<>]?[0-9.]+|[A-Za-z]+)", line)
+            if m_arrow:
+                t_name = m_arrow.group(1).strip()
+                if not any(t_name.lower().startswith(p) for p in skip_prefixes):
                     tests.append(TestResultInput(
-                        test_name=m_arrow.group(1).strip(),
+                        test_name=t_name,
                         value=m_arrow.group(2).strip(),
                         unit=""
                     ))
                     i += 1
                     continue
-                # Bullet list syntax: - **Fasting Blood Sugar**: 6.0 mmol/L or - Hemoglobin: 13.5 g/dL
-                m_bullet = re.match(r"^[-*]\s*(?:\*\*)?([a-zA-Z0-9\s()]+?)(?:\*\*)?:\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", line)
-                if m_bullet:
+            # Bullet list syntax: - **Fasting Blood Sugar**: 6.0 mmol/L or - Hemoglobin: 13.5 g/dL
+            m_bullet = re.match(r"^[-*]\s*(?:\*\*)?([a-zA-Z0-9\s()]+?)(?:\*\*)?:\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", line)
+            if m_bullet:
+                t_name = m_bullet.group(1).strip()
+                if not any(t_name.lower().startswith(p) for p in skip_prefixes):
                     tests.append(TestResultInput(
-                        test_name=m_bullet.group(1).strip(),
+                        test_name=t_name,
                         value=m_bullet.group(2).strip(),
                         unit=(m_bullet.group(3) or "").strip()
                     ))
                     i += 1
                     continue
-                # Plain colon line: TSH: 2.5 mIU/L
-                m_colon = re.match(r"^([a-zA-Z0-9\s()]+):\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", line)
-                if m_colon:
+            # Plain colon line: TSH: 2.5 mIU/L
+            m_colon = re.match(r"^([a-zA-Z0-9\s()]+):\s*([<>]?[0-9.]+|[A-Za-z]+)\s*([a-zA-Z/]+)?", line)
+            if m_colon:
+                t_name = m_colon.group(1).strip()
+                if not any(t_name.lower().startswith(p) for p in skip_prefixes):
                     tests.append(TestResultInput(
-                        test_name=m_colon.group(1).strip(),
+                        test_name=t_name,
                         value=m_colon.group(2).strip(),
                         unit=(m_colon.group(3) or "").strip()
                     ))
                     i += 1
                     continue
-                logger.warning("Unrecognized analytical result line: %s", line)
-                i += 1
+            logger.warning("Unrecognized analytical result line: %s", line)
+            i += 1
                 
     return demo, tests

@@ -27,10 +27,32 @@ export default {
           950: '#020617',
         },
         healthcare: {
-          bg: '#f8fafc',
+          bg: '#F5F7FB',
           card: '#ffffff',
           darkBg: '#0b1120',
           darkCard: '#131d33',
+        },
+        zendenta: {
+          bg: '#F5F7FB',
+          card: '#FFFFFF',
+          border: '#E8ECEF',
+          darkBorder: '#1E293B',
+          blue: {
+            DEFAULT: '#2F54EB',
+            hover: '#1D39C4',
+            light: '#F0F5FF',
+            border: '#ADC6FF',
+          },
+          teal: {
+            DEFAULT: '#0D9488',
+            hover: '#0F766E',
+            light: '#F0FDFA',
+          },
+          slate: {
+            dark: '#1E293B',
+            muted: '#64748B',
+            light: '#94A3B8',
+          }
         },
         status: {
           normal: {

@@ -41,19 +41,21 @@ export const DoctorQuestionsPanel: React.FC<DoctorQuestionsPanelProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-card border border-slate-200/80 dark:border-slate-800 transition-colors">
+    <div className="bg-white dark:bg-healthcare-darkCard rounded-2xl p-6 shadow-soft border border-zendenta-border dark:border-slate-800 transition-colors">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-zendenta-blue dark:text-blue-400 flex items-center justify-center shrink-0">
             <Stethoscope size={22} />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-display">
+            <h3 className="text-sm font-bold text-zendenta-slate-dark dark:text-white">
               {t.doctorQuestionsTitle}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t.doctorQuestionsSubtitle}
+            <p className="text-xs text-zendenta-slate-muted dark:text-slate-400">
+              {doctorData?.is_general
+                ? 'All tests in normal range: 3 general follow-up questions'
+                : 'Targeted inquiries based on your out-of-range test results'}
             </p>
           </div>
         </div>
@@ -80,8 +82,8 @@ export const DoctorQuestionsPanel: React.FC<DoctorQuestionsPanelProps> = ({
 
       {/* Urgent Warning if any critical values triggered */}
       {urgentWarning && (
-        <div className="mt-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2.5 text-rose-900 dark:text-rose-200 text-xs">
-          <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+        <div className="mt-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2.5 text-rose-900 dark:text-rose-200 text-xs urgent-ring">
+          <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5 animate-pulse" />
           <div>
             <span className="font-bold block uppercase tracking-wider text-[10px]">
               Urgent Medical Alert
@@ -106,13 +108,13 @@ export const DoctorQuestionsPanel: React.FC<DoctorQuestionsPanelProps> = ({
               <div
                 key={idx}
                 onClick={() => onToggleQuestion(question)}
-                className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-start gap-3 ${
+                className={`p-3.5 rounded-xl border transition cursor-pointer flex items-start gap-3 ${
                   isSelected
-                    ? 'border-teal-400 bg-teal-50/50 dark:bg-teal-950/30 ring-1 ring-teal-400/20'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/60'
+                    ? 'border-zendenta-blue bg-blue-50/50 dark:bg-blue-950/30 ring-1 ring-zendenta-blue/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 hover:bg-slate-100/60'
                 }`}
               >
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs shrink-0 mt-0.5">
+                <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs shrink-0 mt-0.5">
                   {idx + 1}
                 </div>
 
@@ -130,14 +132,18 @@ export const DoctorQuestionsPanel: React.FC<DoctorQuestionsPanelProps> = ({
                   }}
                   className={`p-1 rounded-lg transition shrink-0 ${
                     isSelected
-                      ? 'text-teal-600 dark:text-teal-400'
+                      ? 'text-zendenta-blue dark:text-blue-400'
                       : 'text-slate-400 hover:text-slate-600'
                   }`}
                   title={isSelected ? 'Remove from print summary' : 'Add to print summary'}
                 >
                   <BookmarkCheck
                     size={18}
-                    className={isSelected ? 'fill-teal-600/20 stroke-teal-600' : 'stroke-slate-400'}
+                    className={
+                      isSelected
+                        ? 'fill-blue-600/20 stroke-zendenta-blue'
+                        : 'stroke-slate-400'
+                    }
                   />
                 </button>
               </div>
@@ -151,9 +157,9 @@ export const DoctorQuestionsPanel: React.FC<DoctorQuestionsPanelProps> = ({
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
             <FileText size={13} />
-            <span>Click any question to include it in the printable medical export</span>
+            <span>Click any question to bookmark for the printable visit sheet</span>
           </span>
-          <span className="font-semibold text-teal-600 dark:text-teal-400">
+          <span className="font-semibold text-zendenta-blue dark:text-blue-400">
             {selectedQuestions.length} selected
           </span>
         </div>

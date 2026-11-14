@@ -4,7 +4,12 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 
-load_dotenv()
+# Ensure .env in root directory is loaded
+_root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+if os.path.exists(_root_env):
+    load_dotenv(_root_env, override=True)
+else:
+    load_dotenv()
 
 
 class LLMConfig:
