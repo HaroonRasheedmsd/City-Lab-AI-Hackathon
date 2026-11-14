@@ -1,4 +1,4 @@
-"""FastAPI REST application exposing the deterministic clinical classification engine."""
+"""FastAPI REST application exposing the deterministic clinical rules engine and explanation layer."""
 
 import logging
 from typing import Any, Dict, List, Optional
@@ -8,8 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.classify.engine import classify_test
 from backend.ingestion.loader import get_corpus_db
 from backend.ingestion.parser import parse_patient_report
+from backend.llm.service import explanation_service
 from backend.models.schemas import (
+    ChatRequest,
+    ChatResponse,
     DemographicData,
+    DoctorQuestionsResponse,
+    ExplanationResponse,
     PatientReportInput,
     PrivacyRefusal,
     QueryRequest,
@@ -23,8 +28,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 logger = logging.getLogger("citylab-backend")
 
 app = FastAPI(
-    title="CityLab Diagnostics - Deterministic Classification Engine",
-    description="Problem B Medical Lab Report Explainer backend rules engine.",
+    title="CityLab Diagnostics - Explainer & Classification Engine",
+    description="Problem B Medical Lab Report Explainer backend rules engine and explanation layer.",
     version="1.0.0",
 )
 
@@ -48,6 +53,7 @@ def health_check() -> Dict[str, Any]:
         "status": "ok",
         "version": "1.0.0",
         "engine": "deterministic_rules_engine",
+        "explanation_layer": "resilient_llm_with_fallback",
         "patients_loaded": len(db.patients),
         "reference_ranges_loaded": len(db.reference_ranges),
         "urgent_rules_loaded": len(db.urgent_thresholds),
@@ -108,10 +114,8 @@ def analyze_report(payload: PatientReportInput) -> ReportSummary:
         date_of_issuance=payload.date_of_issuance,
     )
 
-    # If raw_text is provided, parse it
     if payload.raw_text:
         parsed_demo, parsed_tests = parse_patient_report(payload.raw_text)
-        # Merge demographics if not explicitly provided in payload
         if not demo.patient_name:
             demo.patient_name = parsed_demo.patient_name
         if demo.recorded_age is None:
@@ -124,7 +128,6 @@ def analyze_report(payload: PatientReportInput) -> ReportSummary:
             demo.patient_id = parsed_demo.patient_id
         tests_to_run.extend(parsed_tests)
 
-    # Append any explicit results from the input payload
     if payload.results:
         tests_to_run.extend(payload.results)
 
@@ -170,6 +173,64 @@ def query_patient_data(req: QueryRequest) -> Dict[str, Any]:
         "active_patient_name": demo.patient_name,
         "query": req.query,
     }
+
+
+# =====================================================================
+# LLM Explanation Layer Endpoints
+# =====================================================================
+
+@app.post("/api/patients/{patient_id}/explain", response_model=ExplanationResponse, tags=["Explanation"])
+def explain_patient_report(patient_id: str) -> ExplanationResponse:
+    """
+    Generate plain-language class-8 explanations for computed test results.
+    Never diagnoses; gracefully degrades to templates if LLM providers fail.
+    """
+    norm_id = patient_id.strip().upper()
+    if norm_id not in db.patients:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient '{patient_id}' not found.",
+        )
+
+    demo, tests = db.patients[norm_id]
+    classifications = [classify_test(t, patient=demo, db=db) for t in tests]
+    return explanation_service.explain_patient_results(norm_id, classifications, demo)
+
+
+@app.post("/api/patients/{patient_id}/doctor-questions", response_model=DoctorQuestionsResponse, tags=["Explanation"])
+def get_doctor_questions(patient_id: str) -> DoctorQuestionsResponse:
+    """
+    Generate 3 to 5 targeted questions for the physician based on non-normal results.
+    Includes urgent warning if any critical limits are breached.
+    """
+    norm_id = patient_id.strip().upper()
+    if norm_id not in db.patients:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient '{patient_id}' not found.",
+        )
+
+    demo, tests = db.patients[norm_id]
+    classifications = [classify_test(t, patient=demo, db=db) for t in tests]
+    return explanation_service.generate_doctor_questions(norm_id, classifications, demo)
+
+
+@app.post("/api/patients/{patient_id}/chat", response_model=ChatResponse, tags=["Explanation"])
+def chat_patient_endpoint(patient_id: str, req: ChatRequest) -> ChatResponse:
+    """
+    Patient-locked conversational Q&A endpoint.
+    Protected by code-based prompt injection sanitizer and intent router.
+    """
+    norm_id = patient_id.strip().upper()
+    if norm_id not in db.patients:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient '{patient_id}' not found.",
+        )
+
+    demo, tests = db.patients[norm_id]
+    classifications = [classify_test(t, patient=demo, db=db) for t in tests]
+    return explanation_service.chat_with_patient(norm_id, req.message, classifications, demo)
 
 
 if __name__ == "__main__":

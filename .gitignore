@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Pytest cache
+# Caches
+.cache/
+*.cache/
 .pytest_cache/
 
 # Environments

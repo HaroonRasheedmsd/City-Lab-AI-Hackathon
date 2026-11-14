@@ -1,4 +1,4 @@
-"""Domain models and schemas for CityLab Diagnostics Rules Engine."""
+"""Domain models and schemas for CityLab Diagnostics Rules Engine and LLM Explanation Layer."""
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
@@ -115,3 +115,57 @@ class QueryRequest(BaseModel):
     """Session-bound query request."""
     patient_id: str
     query: str
+
+
+# =====================================================================
+# LLM Explanation Layer Schemas
+# =====================================================================
+
+class TestExplanationItem(BaseModel):
+    """Plain-language explanation for an individual test."""
+    test_canonical: str
+    what_it_measures: str
+    what_low_or_high_can_mean: str
+    simple_summary: str
+
+
+class ExplanationResponse(BaseModel):
+    """Response payload for POST /api/patients/{id}/explain."""
+    patient_id: str
+    patient_name: Optional[str] = None
+    provider_used: str
+    cached: bool = False
+    latency_ms: float = 0.0
+    explanations: List[TestExplanationItem] = Field(default_factory=list)
+    disclaimer: str = (
+        "This explanation is for informational purposes only. It does not diagnose any disease. "
+        "Only a licensed medical doctor can diagnose conditions."
+    )
+
+
+class DoctorQuestionsResponse(BaseModel):
+    """Response payload for POST /api/patients/{id}/doctor-questions."""
+    patient_id: str
+    patient_name: Optional[str] = None
+    provider_used: str
+    cached: bool = False
+    latency_ms: float = 0.0
+    questions: List[str] = Field(default_factory=list)
+    is_general: bool = False
+    urgent_warning: Optional[str] = None
+
+
+class ChatRequest(BaseModel):
+    """Chat input payload for POST /api/patients/{id}/chat."""
+    message: str
+
+
+class ChatResponse(BaseModel):
+    """Chat response payload for POST /api/patients/{id}/chat."""
+    patient_id: str
+    intent: str
+    response: str
+    provider_used: str
+    cached: bool = False
+    latency_ms: float = 0.0
+    safety_refusal: Optional[PrivacyRefusal] = None
